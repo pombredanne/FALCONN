@@ -5,52 +5,48 @@
 #include <utility>
 #include <vector>
 
-#include "eigen_wrapper.h"
+#include <Eigen/Dense>
 
 namespace falconn {
 
 ///
 /// Common exception base class
 ///
-class FalconnError: public std::logic_error {
+class FalconnError : public std::logic_error {
  public:
   FalconnError(const char* msg) : logic_error(msg) {}
 };
-
 
 ///
 /// General traits class for point types. Only the template specializations
 /// below correspond to valid point types.
 ///
-template<typename PointType>
+template <typename PointType>
 struct PointTypeTraits {
   PointTypeTraits() {
-    static_assert(FalseStruct<PointType>::value,
-        "Point type not supported.");
+    static_assert(FalseStruct<PointType>::value, "Point type not supported.");
   }
- 
-  template<typename PT>
+
+  template <typename PT>
   struct FalseStruct : std::false_type {};
 };
-
 
 ///
 /// Type for dense points / vectors. The coordinate type can be either float
 /// or double (i.e., use DenseVector<float> or DenseVector<double>). In most
 /// cases, float (single precision) should be sufficient.
 ///
-template<typename CoordinateType>
-using DenseVector = Eigen::Matrix<CoordinateType, Eigen::Dynamic, 1,
-                                  Eigen::ColMajor>;
+template <typename CoordinateType>
+using DenseVector =
+    Eigen::Matrix<CoordinateType, Eigen::Dynamic, 1, Eigen::ColMajor>;
 
 ///
 /// Traits class for accessing the corresponding scalar type.
 ///
-template<typename CoordinateType>
+template <typename CoordinateType>
 struct PointTypeTraits<DenseVector<CoordinateType>> {
   typedef CoordinateType ScalarType;
 };
-
 
 ///
 /// Type for sparse points / vectors. The coordinate type can be either float
@@ -64,18 +60,17 @@ struct PointTypeTraits<DenseVector<CoordinateType>> {
 /// might be useful if you have indices that fit into an int16_t and you want
 /// to save memory.
 ///
-template<typename CoordinateType, typename IndexType = int32_t>
+template <typename CoordinateType, typename IndexType = int32_t>
 using SparseVector = std::vector<std::pair<IndexType, CoordinateType>>;
 
 ///
 /// Traits class for accessing the corresponding scalar type.
 ///
-template<typename CoordinateType, typename IndexT>
+template <typename CoordinateType, typename IndexT>
 struct PointTypeTraits<SparseVector<CoordinateType, IndexT>> {
   typedef CoordinateType ScalarType;
   typedef IndexT IndexType;
 };
-
 
 ///
 /// Data structure for point query statistics
@@ -84,7 +79,7 @@ struct QueryStatistics {
   ///
   /// Average total query time
   ///
-  double average_total_query_time = 0.0; 
+  double average_total_query_time = 0.0;
   ///
   /// Average hashing time
   ///
@@ -93,6 +88,8 @@ struct QueryStatistics {
   /// Average hash table retrieval time
   ///
   double average_hash_table_time = 0.0;
+
+  double average_sketches_time = 0.0;
   ///
   /// Average time for computing distances
   ///
@@ -105,23 +102,76 @@ struct QueryStatistics {
   /// Average number of *unique* candidates
   ///
   double average_num_unique_candidates = 0;
+
+  double average_num_filtered_candidates = 0;
+  ///
+  /// Number of queries the statistics were computed over
+  ///
+  int_fast64_t num_queries = 0;
+
+  // TODO: move these to internal helper functions?
+  void convert_to_totals() {
+    average_total_query_time *= num_queries;
+    average_lsh_time *= num_queries;
+    average_hash_table_time *= num_queries;
+    average_sketches_time *= num_queries;
+    average_distance_time *= num_queries;
+    average_num_candidates *= num_queries;
+    average_num_unique_candidates *= num_queries;
+    average_num_filtered_candidates *= num_queries;
+  }
+
+  void compute_averages() {
+    if (num_queries > 0) {
+      average_total_query_time /= num_queries;
+      average_lsh_time /= num_queries;
+      average_hash_table_time /= num_queries;
+      average_sketches_time /= num_queries;
+      average_distance_time /= num_queries;
+      average_num_candidates /= num_queries;
+      average_num_unique_candidates /= num_queries;
+      average_num_filtered_candidates /= num_queries;
+    }
+  }
+
+  void add_totals(const QueryStatistics& other) {
+    average_total_query_time += other.average_total_query_time;
+    average_lsh_time += other.average_lsh_time;
+    average_hash_table_time += other.average_hash_table_time;
+    average_sketches_time += other.average_sketches_time;
+    average_distance_time += other.average_distance_time;
+    average_num_candidates += other.average_num_candidates;
+    average_num_unique_candidates += other.average_num_unique_candidates;
+    average_num_filtered_candidates += other.average_num_filtered_candidates;
+    num_queries += other.num_queries;
+  }
+
+  void reset() {
+    average_total_query_time = 0.0;
+    average_lsh_time = 0.0;
+    average_hash_table_time = 0.0;
+    average_sketches_time = 0.0;
+    average_distance_time = 0.0;
+    average_num_candidates = 0.0;
+    average_num_unique_candidates = 0.0;
+    average_num_filtered_candidates = 0.0;
+    num_queries = 0;
+  }
+};
+
+///
+/// A struct for wrapping point data stored in a single dense data array. The
+/// coordinate order is assumed to be point-by-point (row major), i.e., the
+/// first dimension coordinates belong to the first point and there are
+/// num_points points in total.
+///
+template <typename CoordinateType>
+struct PlainArrayPointSet {
+  const CoordinateType* data;
+  int_fast32_t num_points;
+  int_fast32_t dimension;
 };
 
 }  // namespace falconn
-
-
-// Workaround for the CYGWIN bug described in
-// http://stackoverflow.com/questions/28997206/cygwin-support-for-c11-in-g4-9-2
-
-#ifdef __CYGWIN__
-
-#include <cmath>
-
-namespace std {
-using ::log2;
-using ::round;
-};
-
-#endif
 
 #endif

@@ -1,20 +1,21 @@
 CC = gcc
-CFLAGS = -O3 -march=native -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
-CXX = g++
-CXXFLAGS = -O3 -march=native -std=c++11 -Wall
+CFLAGS = -O3 -march=native -std=c99 -pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
 
-.PHONY: all clean
+all: test_float test_double fast_copy.o fht.o
 
-all: best_chunk test fht.o
+OBJ := fast_copy.o fht.o
 
-best_chunk: best_chunk.cpp fht.h fht.o
-	$(CXX) $(CXXFLAGS) best_chunk.cpp -o best_chunk fht.o
+%.o: %.c
+	$(CC) $< -o $@ -c $(CFLAGS)
 
-test: test.cpp fht.h fht.o
-	$(CXX) $(CXXFLAGS) test.cpp -o test fht.o
+test_%: test_%.c $(OBJ)
+	$(CC) $< $(OBJ) -o $@ $(CFLAGS)
 
-fht.o: fht.h fht_impl.h fht.c
-	$(CC) $(CFLAGS) -c fht.c -o fht.o
+test_double_header_only: test_double_header_only.c
+	$(CC) $< -o $@ $(CFLAGS)
+
+test_float_header_only: test_double_header_only.c
+	$(CC) $< -o $@ $(CFLAGS)
 
 clean:
-	rm -f fht.o best_chunk test
+	rm -f test_float test_double test_float_header_only test_double_header_only $(OBJ)

@@ -14,11 +14,11 @@ namespace fc = falconn::core;
 namespace ft = falconn::test;
 
 using fc::ArrayDataStorage;
-using fc::cp_hash_helpers::compute_k_parameters_for_bits;
-using fc::cp_hash_helpers::FHTHelper;
-using fc::cp_hash_helpers::log2ceil;
 using fc::CrossPolytopeHashDense;
 using fc::CrossPolytopeHashSparse;
+using fc::cp_hash_helpers::FHTHelper;
+using fc::cp_hash_helpers::compute_k_parameters_for_bits;
+using fc::log2ceil;
 using ft::count_bits;
 using std::make_pair;
 using std::pair;
@@ -63,7 +63,7 @@ TEST(PolytopeHashTest, FHTHelperTest1) {
     v[0] = 1.0;
     fht.apply(v.data());
 
-    float expected_coordinate = std::sqrt(1.0 / dim);
+    float expected_coordinate = 1.0;
     for (int ii = 0; ii < dim; ++ii) {
       EXPECT_NEAR(expected_coordinate, v[ii], 0.00001);
     }
@@ -81,7 +81,7 @@ TEST(PolytopeHashTest, FHTHelperTest2) {
     v[0] = 1.0;
     fht.apply(v.data());
 
-    float expected_coordinate = std::sqrt(1.0 / dim);
+    float expected_coordinate = 1.0;
     for (int ii = 0; ii < dim; ++ii) {
       EXPECT_NEAR(expected_coordinate, v[ii], 0.00001);
     }
@@ -99,7 +99,7 @@ TEST(PolytopeHashTest, FHTHelperTest3) {
     v[0] = 1.0;
     fht.apply(v.data());
 
-    double expected_coordinate = std::sqrt(1.0 / dim);
+    double expected_coordinate = 1.0;
     for (int ii = 0; ii < dim; ++ii) {
       EXPECT_NEAR(expected_coordinate, v[ii], 0.00001);
     }
@@ -265,8 +265,8 @@ TEST(PolytopeHashTest, SparseHashTest1) {
   int num_rotations = 3;
   int feature_hashing_dim = 4;
   uint64_t seed = 14032009;
-  CrossPolytopeHashSparse<float> hash(dim, k, l, num_rotations,
-      feature_hashing_dim, feature_hashing_dim, seed);
+  CrossPolytopeHashSparse<float> hash(
+      dim, k, l, num_rotations, feature_hashing_dim, feature_hashing_dim, seed);
   vector<uint32_t> result1(l), result2(l), result3(l);
   hash.hash(v1, &result1);
   hash.hash(v2, &result2);
@@ -343,18 +343,18 @@ TEST(PolytopeHashTest, DenseMultiprobeTest2) {
   uint64_t seed = 54320123;
   CrossPolytopeHashDense<float> hash(dim, k, l, num_rotations, dim - 2, seed);
   DenseQuery query(hash);
-  
+
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
 
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 2);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(2u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
-  
+
   uint32_t bitdiff = probes_by_table[0][0] ^ probes_by_table[0][1];
   ASSERT_GE(count_bits(bitdiff), 1);
   ASSERT_LE(count_bits(bitdiff), 3);
@@ -378,11 +378,11 @@ TEST(PolytopeHashTest, DenseMultiprobeTest3) {
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
-  
+
   // 256 instead of 512 because the last CP has dim 2, not 4.
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 256);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(256u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -428,10 +428,10 @@ TEST(PolytopeHashTest, DenseMultiprobeTest4) {
     vector<uint32_t> hashes(l);
     hash.hash(v1, &hashes);
     ASSERT_EQ(1u, hashes.size());
-    
+
     vector<vector<uint32_t>> probes_by_table;
     query.get_probes_by_table(v1, &probes_by_table, num_probes);
-    
+
     ASSERT_EQ(1u, probes_by_table.size());
     ASSERT_EQ(num_probes, probes_by_table[0].size());
     ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -479,10 +479,10 @@ TEST(PolytopeHashTest, DenseMultiprobeTest5) {
     vector<uint32_t> hashes(l);
     hash.hash(v1, &hashes);
     ASSERT_EQ(1u, hashes.size());
-    
+
     vector<vector<uint32_t>> probes_by_table;
     query.get_probes_by_table(v1, &probes_by_table, num_probes);
-    
+
     ASSERT_EQ(1u, probes_by_table.size());
     ASSERT_EQ(num_probes, probes_by_table[0].size());
     ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -565,11 +565,11 @@ TEST(PolytopeHashTest, DenseMultiprobeTest7) {
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
-  
+
   // 256 instead of 512 because the last CP has dim 2, not 4.
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 256);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(256u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -603,11 +603,11 @@ TEST(PolytopeHashTest, DenseMultiprobeTest8) {
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
-  
+
   // Now 512 because the last CP has dim 4.
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 512);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(512u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -640,8 +640,8 @@ TEST(PolytopeHashTest, SparseMultiprobeTest1) {
   int num_rotations = 3;
   int feature_hashing_dim = 4;
   uint64_t seed = 14032009;
-  CrossPolytopeHashSparse<float> hash(dim, k, l, num_rotations,
-      feature_hashing_dim, feature_hashing_dim, seed);
+  CrossPolytopeHashSparse<float> hash(
+      dim, k, l, num_rotations, feature_hashing_dim, feature_hashing_dim, seed);
   vector<uint32_t> hashes1(l), hashes2(l), hashes3(l);
   hash.hash(v1, &hashes1);
   hash.hash(v2, &hashes2);
@@ -686,21 +686,22 @@ TEST(PolytopeHashTest, SparseMultiprobeTest2) {
   int feature_hashing_dim = 4;
   uint64_t seed = 323309423;
   CrossPolytopeHashSparse<float> hash(dim, k, l, num_rotations,
-      feature_hashing_dim, feature_hashing_dim - 2, seed);
-  
+                                      feature_hashing_dim,
+                                      feature_hashing_dim - 2, seed);
+
   SparseQuery query(hash);
-  
+
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
 
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 2);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(2u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
-  
+
   uint32_t bitdiff = probes_by_table[0][0] ^ probes_by_table[0][1];
   ASSERT_GE(count_bits(bitdiff), 1);
   ASSERT_LE(count_bits(bitdiff), 3);
@@ -721,18 +722,19 @@ TEST(PolytopeHashTest, SparseMultiprobeTest3) {
   int feature_hashing_dim = 4;
   uint64_t seed = 323309423;
   CrossPolytopeHashSparse<float> hash(dim, k, l, num_rotations,
-      feature_hashing_dim, feature_hashing_dim - 2, seed);
-  
-  SparseQuery query(hash); 
+                                      feature_hashing_dim,
+                                      feature_hashing_dim - 2, seed);
+
+  SparseQuery query(hash);
 
   vector<uint32_t> hashes(l);
   hash.hash(v1, &hashes);
   ASSERT_EQ(1u, hashes.size());
- 
+
   // 256 instead of 512 because the last CP has dim 2, not 4.
   vector<vector<uint32_t>> probes_by_table;
   query.get_probes_by_table(v1, &probes_by_table, 256);
-  
+
   ASSERT_EQ(1u, probes_by_table.size());
   ASSERT_EQ(256u, probes_by_table[0].size());
   ASSERT_EQ(hashes[0], probes_by_table[0][0]);
@@ -811,8 +813,8 @@ TEST(PolytopeHashTest, SparseBatchHashTest1) {
   int num_rotations = 3;
   int feature_hashing_dim = 4;
   uint64_t seed = 14032009;
-  CrossPolytopeHashSparse<float> hash(dim, k, l, num_rotations,
-      feature_hashing_dim, feature_hashing_dim, seed);
+  CrossPolytopeHashSparse<float> hash(
+      dim, k, l, num_rotations, feature_hashing_dim, feature_hashing_dim, seed);
   vector<uint32_t> result1(l), result2(l), result3(l);
   hash.hash(v1, &result1);
   hash.hash(v2, &result2);

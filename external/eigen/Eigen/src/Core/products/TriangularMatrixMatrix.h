@@ -126,6 +126,10 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
+    // The small panel size must not be larger than blocking size.
+    // Usually this should never be the case because SmallPanelWidth^2 is very small
+    // compared to L2 cache size, but let's be safe:
+    Index panelWidth = (std::min)(Index(SmallPanelWidth),(std::min)(kc,mc));
 
     std::size_t sizeA = kc*mc;
     std::size_t sizeB = kc*cols;
@@ -133,7 +137,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
 
-    Matrix<Scalar,SmallPanelWidth,SmallPanelWidth,LhsStorageOrder> triangularBuffer;
+    Matrix<Scalar,SmallPanelWidth,SmallPanelWidth,LhsStorageOrder> triangularBuffer((internal::constructor_without_unaligned_array_assert()));
     triangularBuffer.setZero();
     if((Mode&ZeroDiag)==ZeroDiag)
       triangularBuffer.diagonal().setZero();
@@ -169,9 +173,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
       if(IsLower || actual_k2<rows)
       {
         // for each small vertical panels of lhs
-        for (Index k1=0; k1<actual_kc; k1+=SmallPanelWidth)
+        for (Index k1=0; k1<actual_kc; k1+=panelWidth)
         {
-          Index actualPanelWidth = std::min<Index>(actual_kc-k1, SmallPanelWidth);
+          Index actualPanelWidth = std::min<Index>(actual_kc-k1, panelWidth);
           Index lengthTarget = IsLower ? actual_kc-k1-actualPanelWidth : k1;
           Index startBlock   = actual_k2+k1;
           Index blockBOffset = k1;
@@ -280,7 +284,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
 
-    Matrix<Scalar,SmallPanelWidth,SmallPanelWidth,RhsStorageOrder> triangularBuffer;
+    Matrix<Scalar,SmallPanelWidth,SmallPanelWidth,RhsStorageOrder> triangularBuffer((internal::constructor_without_unaligned_array_assert()));
     triangularBuffer.setZero();
     if((Mode&ZeroDiag)==ZeroDiag)
       triangularBuffer.diagonal().setZero();

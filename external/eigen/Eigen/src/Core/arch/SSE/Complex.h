@@ -255,7 +255,7 @@ template<> EIGEN_STRONG_INLINE Packet2cf pdiv<Packet2cf>(const Packet2cf& a, con
   return Packet2cf(_mm_div_ps(res.v,_mm_add_ps(s,_mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(s), 0xb1)))));
 }
 
-EIGEN_STRONG_INLINE Packet2cf pcplxflip/*<Packet2cf>*/(const Packet2cf& x)
+EIGEN_STRONG_INLINE Packet2cf pcplxflip/* <Packet2cf> */(const Packet2cf& x)
 {
   return Packet2cf(vec4f_swizzle1(x.v, 1, 0, 3, 2));
 }
@@ -456,7 +456,7 @@ template<> EIGEN_STRONG_INLINE Packet1cd pdiv<Packet1cd>(const Packet1cd& a, con
   return Packet1cd(_mm_div_pd(res.v, _mm_add_pd(s,_mm_shuffle_pd(s, s, 0x1))));
 }
 
-EIGEN_STRONG_INLINE Packet1cd pcplxflip/*<Packet1cd>*/(const Packet1cd& x)
+EIGEN_STRONG_INLINE Packet1cd pcplxflip/* <Packet1cd> */(const Packet1cd& x)
 {
   return Packet1cd(preverse(Packet2d(x.v)));
 }
@@ -474,6 +474,26 @@ ptranspose(PacketBlock<Packet2cf,2>& kernel) {
 template<>  EIGEN_STRONG_INLINE Packet2cf pblend(const Selector<2>& ifPacket, const Packet2cf& thenPacket, const Packet2cf& elsePacket) {
   __m128d result = pblend<Packet2d>(ifPacket, _mm_castps_pd(thenPacket.v), _mm_castps_pd(elsePacket.v));
   return Packet2cf(_mm_castpd_ps(result));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf pinsertfirst(const Packet2cf& a, std::complex<float> b)
+{
+  return Packet2cf(_mm_loadl_pi(a.v, reinterpret_cast<const __m64*>(&b)));
+}
+
+template<> EIGEN_STRONG_INLINE Packet1cd pinsertfirst(const Packet1cd&, std::complex<double> b)
+{
+  return pset1<Packet1cd>(b);
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf pinsertlast(const Packet2cf& a, std::complex<float> b)
+{
+  return Packet2cf(_mm_loadh_pi(a.v, reinterpret_cast<const __m64*>(&b)));
+}
+
+template<> EIGEN_STRONG_INLINE Packet1cd pinsertlast(const Packet1cd&, std::complex<double> b)
+{
+  return pset1<Packet1cd>(b);
 }
 
 } // end namespace internal
